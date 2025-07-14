@@ -1,0 +1,48 @@
+<div>
+  <h2>Formulario de Registro</h2>
+
+  <form [formGroup]="registroForm">
+
+    <!-- Nivel 3.3: Campo Nombre de Usuario -->
+    <!--
+      Añadimos el input para el nombre de usuario.
+      formControlName="username" lo vincula con el FormControl 'username'
+      que acabamos de definir en registro.component.ts.
+    -->
+    <div>
+      <label for="username">Nombre de Usuario:</label>
+      <input
+        type="text"
+        id="username"
+        formControlName="username">
+      <!--
+        Nivel 3.3: Mostrar Mensajes de Error Dinámicos
+        Usamos *ngIf para mostrar el mensaje de error 'required'.
+        registroForm.get('username') nos da acceso al FormControl.
+        .invalid verifica si el control no cumple con sus validadores.
+        .touched asegura que el mensaje solo se muestre después de que el usuario
+        haya interactuado con el campo (lo haya visitado y salido).
+      -->
+      <div *ngIf="registroForm.get('username')?.invalid && registroForm.get('username')?.touched">
+        <div *ngIf="registroForm.get('username')?.errors?.['required']">
+          El nombre de usuario es obligatorio.
+        </div>
+        <!-- Nivel 3.3: Mensaje de error para longitud mínima -->
+        <div *ngIf="registroForm.get('username')?.errors?.['minlength']">
+          El nombre de usuario debe tener al menos {{ registroForm.get('username')?.errors?.['minlength'].requiredLength }} caracteres.
+        </div>
+      </div>
+    </div>
+
+    <!--
+      El botón de envío y la sección de datos enviados se mantendrán,
+      pero su funcionalidad completa se implementará en pasos posteriores.
+    -->
+    <button
+      type="submit"
+      [disabled]="registroForm.invalid || registroForm.pending">
+      Registrarse
+    </button>
+
+  </form>
+</div>
