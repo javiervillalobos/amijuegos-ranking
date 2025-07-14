@@ -1,0 +1,12 @@
+<select [(ngModel)]="juegoVotado">
+   <option value="0" selected>Seleccionar juego</option> 
+   <option *ngFor="let entry of juegos | keyvalue" value="{{entry.key}}">{{entry.value}}</option> 
+</select>
+<input [(ngModel)]="votante">
+<app-boton-votar (votar)="ingresarVoto()"></app-boton-votar>
+<span class="message" *ngIf="validationMessage">{{validationMessage}}</span>
+<ul>
+  <li *ngFor="let entry of votos | keyvalue">
+    {{ entry.key }}: <span class="voto" >{{ entry.value }}</span>
+  </li>
+</ul>
