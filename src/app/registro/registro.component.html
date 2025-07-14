@@ -34,13 +34,65 @@
       </div>
     </div>
 
-    <!--
-      El botón de envío y la sección de datos enviados se mantendrán,
-      pero su funcionalidad completa se implementará en pasos posteriores.
-    -->
+    <!-- Nivel 3.3: Campo Email -->
+    <div>
+      <label for="email">Email:</label>
+      <input
+        type="email"
+        id="email"
+        formControlName="email"
+      >
+      <div *ngIf="registroForm.get('email')?.invalid && registroForm.get('email')?.touched">
+        <div *ngIf="registroForm.get('email')?.errors?.['required']">
+          El email es obligatorio.
+        </div>
+        <div *ngIf="registroForm.get('email')?.errors?.['email']">
+          El formato del email no es válido.
+        </div>
+      </div>
+    </div>
+
+    <!-- Nivel 3.3: Grupo de Contraseñas -->
+    <div formGroupName="passwordGroup">
+      <div>
+        <label for="password">Contraseña:</label>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+        >
+        <div *ngIf="registroForm.get('passwordGroup.password')?.invalid && registroForm.get('passwordGroup.password')?.touched">
+          <div *ngIf="registroForm.get('passwordGroup.password')?.errors?.['required']">
+            La contraseña es obligatoria.
+          </div>
+          <div *ngIf="registroForm.get('passwordGroup.password')?.errors?.['minlength']">
+            La contraseña debe tener al menos {{ registroForm.get('passwordGroup.password')?.errors?.['minlength'].requiredLength }} caracteres.
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label for="confirmPassword">Confirmar Contraseña:</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          formControlName="confirmPassword"
+        >
+        <div *ngIf="registroForm.get('passwordGroup.confirmPassword')?.invalid && registroForm.get('passwordGroup.confirmPassword')?.touched">
+          <div *ngIf="registroForm.get('passwordGroup.confirmPassword')?.errors?.['required']">
+            Debe confirmar la contraseña.
+          </div>
+        </div>
+        <div *ngIf="registroForm.get('passwordGroup')?.errors?.['passwordsMismatch'] && registroForm.get('passwordGroup.confirmPassword')?.touched">
+          Las contraseñas no coinciden.
+        </div>
+      </div>
+    </div>
+
     <button
       type="submit"
-      [disabled]="registroForm.invalid || registroForm.pending">
+      [disabled]="registroForm.invalid || registroForm.pending"
+    >
       Registrarse
     </button>
 

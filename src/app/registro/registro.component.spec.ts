@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RegistroComponent } from './registro.component';
 import { ReactiveFormsModule } from '@angular/forms'; // ¡Importante!
+import { By } from '@angular/platform-browser';
 
 describe('RegistroComponent (TDD - Paso 1)', () => {
   let component: RegistroComponent;
@@ -41,7 +42,9 @@ describe('RegistroComponent (TDD - Paso 1)', () => {
 
     // Nivel 3.4: Simulación de Interacción
     // Establecemos el valor del control a una cadena vacía.
-    usernameControl?.setValue('');
+    const usernameElement = fixture.nativeElement.querySelector('input[formControlName="username"]');
+    usernameElement.value = '';
+    usernameElement.dispatchEvent(new Event("input"));
 
     // Nivel 3.4: Detección de Cambios
     // No es estrictamente necesario fixture.detectChanges() aquí para el control,
@@ -64,7 +67,9 @@ describe('RegistroComponent (TDD - Paso 1)', () => {
 
     // Nivel 3.4: Simulación de Interacción
     // Establecemos un valor que es más corto que la longitud mínima esperada (ej. 4 caracteres)
-    usernameControl?.setValue('abc'); // Solo 3 caracteres
+    const usernameElement = fixture.nativeElement.querySelector('input[formControlName="username"]');
+    usernameElement.value = 'abc';
+    usernameElement.dispatchEvent(new Event('input'));
 
     // Nivel 3.4: Detección de Cambios
     fixture.detectChanges();
@@ -84,6 +89,84 @@ describe('RegistroComponent (TDD - Paso 1)', () => {
 
     // Esperamos que el formulario completo sea inválido.
     expect(component.registroForm.invalid).toBeTrue();
+  });
+
+    // Nivel 3.4: Prueba 4 - Campo de Email Requerido y Formato Válido
+  // Objetivo: Verificar que el campo 'email' es obligatorio y que requiere
+  // un formato de email válido.
+  it('should make the email field required and validate email format', () => {
+    const emailControl = component.registroForm.get('email');
+    const emailEvent : Event = new Event('input');
+
+    // Caso 1: Email vacío (debe ser requerido)
+    expect(emailControl?.invalid).toBeTrue();
+    expect(emailControl?.errors?.['required']).toBeTrue();
+    expect(component.registroForm.invalid).toBeTrue();
+
+    // Caso 2: Email con formato inválido
+    const emailElement = fixture.nativeElement.querySelector('input[formControlName="email"]');
+    emailElement.value = 'invalid-email';
+    emailElement.dispatchEvent(emailEvent)
+    fixture.detectChanges();
+    expect(emailControl?.invalid).toBeTrue();
+    expect(emailControl?.errors?.['email']).toBeTrue(); // Esperamos el error 'email'
+    expect(component.registroForm.invalid).toBeTrue();
+
+    // Caso 3: Email con formato válido (debería ser válido si solo este campo se considera)
+    emailElement.value = 'test@example.com';
+    emailElement.dispatchEvent(emailEvent);
+    fixture.detectChanges();
+    // En este punto, solo el control 'email' se validaría.
+    // El formulario completo aún podría ser inválido si 'username' no está lleno.
+    expect(emailControl?.valid).toBeTrue(); // El control 'email' debe ser válido
+  });
+
+  // Nivel 3.4: Prueba 5 - Campos de Contraseña Requeridos, Longitud Mínima y Coincidencia
+  // Objetivo: Verificar que los campos 'password' y 'confirmPassword' son obligatorios,
+  // que 'password' tiene una longitud mínima y que ambas contraseñas coinciden.
+  it('should validate password fields for required, minLength, and matching', () => {
+    // Nivel 3.4: Acceso a FormControls anidados
+    const passwordControl = component.registroForm.get('passwordGroup.password');
+    const confirmPasswordControl = component.registroForm.get('passwordGroup.confirmPassword');
+    const passwordGroup = component.registroForm.get('passwordGroup');
+
+    const passwordEvent : Event = new Event('input');
+    const passwordElement = fixture.nativeElement.querySelector('input[formControlName="password"]');
+    const confirmPasswordElement = fixture.nativeElement.querySelector('input[formControlName="confirmPassword"]');
+
+    // Caso 1: Contraseñas vacías (deben ser requeridas)
+    expect(passwordControl).toBeTruthy();
+    expect(passwordControl?.invalid).toBeTrue();
+    expect(passwordControl?.errors?.['required']).toBeTrue();
+    expect(confirmPasswordControl?.invalid).toBeTrue();
+    expect(confirmPasswordControl?.errors?.['required']).toBeTrue();
+    expect(passwordGroup?.invalid).toBeTrue(); // El grupo también debe ser inválido
+
+    // Caso 2: Contraseña demasiado corta
+    passwordElement.value = '123';
+    passwordElement.dispatchEvent(passwordEvent);
+
+    confirmPasswordElement.value = '123';
+    confirmPasswordElement.dispatchEvent(passwordEvent);
+
+    fixture.detectChanges();
+    expect(passwordControl?.invalid).toBeTrue();
+    expect(passwordControl?.errors?.['minlength']).toBeTruthy();
+    expect(passwordGroup?.invalid).toBeTrue();
+
+    // Caso 3: Contraseñas no coinciden
+    passwordElement.value = 'password123';
+    passwordElement.dispatchEvent(passwordEvent);
+
+    confirmPasswordElement.value = 'password456';
+    confirmPasswordElement.dispatchEvent(passwordEvent);
+
+    fixture.detectChanges();
+
+    expect(passwordGroup?.invalid).toBeTrue();
+    // Nivel 3.4: Verificación de Validador Personalizado a Nivel de Grupo
+    expect(passwordGroup?.errors?.['passwordsMismatch']).toBeTrue(); // Error de no coincidencia
+    expect(confirmPasswordControl?.valid).toBeTrue(); // El control individual puede ser válido, pero el grupo no
   });
 
 });
