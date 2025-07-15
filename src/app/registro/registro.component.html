@@ -1,7 +1,7 @@
 <div>
   <h2>Formulario de Registro</h2>
 
-  <form [formGroup]="registroForm">
+  <form [formGroup]="registroForm" (ngSubmit)="onSubmit()">
 
     <!-- Nivel 3.3: Campo Nombre de Usuario -->
     <!--
@@ -31,6 +31,14 @@
         <div *ngIf="registroForm.get('username')?.errors?.['minlength']">
           El nombre de usuario debe tener al menos {{ registroForm.get('username')?.errors?.['minlength'].requiredLength }} caracteres.
         </div>
+        <!-- Nivel 3.3: Mensaje de error para validador asíncrono -->
+        <div *ngIf="registroForm.get('username')?.errors?.['usernameTaken']">
+          Este nombre de usuario ya está en uso.
+        </div>
+      </div>
+      <!-- Nivel 3.3: Indicador de 'pending' -->
+      <div *ngIf="registroForm.get('username')?.pending">
+        Verificando disponibilidad...
       </div>
     </div>
 
@@ -89,12 +97,16 @@
       </div>
     </div>
 
-    <button
-      type="submit"
-      [disabled]="registroForm.invalid || registroForm.pending"
-    >
+    <button type="submit" [disabled]="registroForm.invalid || registroForm.pending">
       Registrarse
     </button>
+
+    <!-- Nivel 3.3: Mostrar datos del formulario (opcional, para depuración) -->
+    <!-- Añadimos esta sección para mostrar los datos enviados, controlada por la propiedad 'submitted' -->
+    <div *ngIf="submitted">
+      <h3>Datos enviados:</h3>
+      <pre>{{ submittedData | json }}</pre>
+    </div>
 
   </form>
 </div>

@@ -1,4 +1,4 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { RegistroComponent } from './registro.component';
 import { ReactiveFormsModule } from '@angular/forms'; // ¡Importante!
 import { By } from '@angular/platform-browser';
@@ -169,4 +169,134 @@ describe('RegistroComponent (TDD - Paso 1)', () => {
     expect(confirmPasswordControl?.valid).toBeTrue(); // El control individual puede ser válido, pero el grupo no
   });
 
+  // Nivel 3.4: Prueba 7 - Envío del Formulario (Simplificado)
+  // Objetivo: Verificar que el método onSubmit se llama cuando el formulario es válido.
+  it('should call onSubmit when the form is valid', fakeAsync(() => {
+
+    const submitButton: HTMLInputElement = fixture.debugElement.query(By.css('button[type="submit"]')).nativeElement;
+    const usernameInput: HTMLInputElement = fixture.debugElement.query(By.css('#username')).nativeElement;
+    const emailInput: HTMLInputElement = fixture.debugElement.query(By.css('#email')).nativeElement;
+    const passwordInput: HTMLInputElement = fixture.debugElement.query(By.css('#password')).nativeElement;
+    const confirmPasswordInput: HTMLInputElement = fixture.debugElement.query(By.css('#confirmPassword')).nativeElement;
+
+    // Rellenar todos los campos con valores válidos
+    usernameInput.value = 'validuser';
+    usernameInput.dispatchEvent(new Event('input'));
+    usernameInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    emailInput.value = 'valid@example.com';
+    emailInput.dispatchEvent(new Event('input'));
+    emailInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    passwordInput.value = 'SecurePass123';
+    passwordInput.dispatchEvent(new Event('input'));
+    passwordInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    confirmPasswordInput.value = 'SecurePass123';
+    confirmPasswordInput.dispatchEvent(new Event('input'));
+    confirmPasswordInput.dispatchEvent(new Event('blur'));
+    fixture.detectChanges();
+
+    tick(500); // Espera a que el validador asíncrono termine
+
+    // Verificar que el formulario es válido
+    expect(component.registroForm.valid).toBeTrue();
+    fixture.detectChanges();                          // re-renderiza el botón
+    expect(component.registroForm.pending).toBeFalse(); // Asegurarse de que no hay validaciones pendientes
+
+    // Espiamos el método onSubmit del componente
+    spyOn(component, 'onSubmit').and.callThrough();
+
+    submitButton.click(); // Simular clic en el botón de envío
+    fixture.detectChanges();
+
+    expect(component.onSubmit).toHaveBeenCalledTimes(1); // onSubmit debe haber sido llamado una vez
+
+    // Opcional: Verificar que los datos enviados son correctos
+    expect(component.submittedData).toEqual({
+      username: 'validuser',
+      email: 'valid@example.com',
+      passwordGroup: {
+        password: 'SecurePass123',
+        confirmPassword: 'SecurePass123'
+      }
+    });
+
+    // Verificar que el bloque de datos enviados se muestra
+    const submittedDataDisplay = fixture.debugElement.query(By.css('div pre'));
+    expect(submittedDataDisplay).toBeTruthy();
+    expect(submittedDataDisplay.nativeElement.textContent).toContain('validuser');
+  }));
+
+  // Nivel 3.4: Prueba 6 - Validador Asíncrono para Nombre de Usuario
+  // Objetivo: Verificar que el validador asíncrono para 'username' funciona,
+  // marcando el control como 'pending' y luego 'invalid' si el nombre de usuario está tomado.
+  it('should validate username asynchronously and mark as invalid if taken', fakeAsync(() => {
+    const usernameInput: HTMLInputElement = fixture.debugElement.query(By.css('#username')).nativeElement;
+    const usernameControl = component.registroForm.get('username');
+
+    // Simular un nombre de usuario que está "tomado" (según la lógica del validador)
+    usernameInput.value = 'testuser';
+    usernameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges(); // Detectar cambios para que el validador asíncrono se dispare
+
+    // Nivel 3.4: Verificación del Estado 'pending'
+    // El control y el formulario deben estar 'pending' mientras la validación asíncrona está en curso.
+    expect(usernameControl?.pending).toBeTrue();
+    expect(component.registroForm.pending).toBeTrue();
+
+    // Nivel 3.4: Simulación de Tiempo (tick)
+    // 'tick()' simula el paso del tiempo, permitiendo que el Observable del validador asíncrono emita su valor.
+    // El 'delay(500)' en el validador significa que necesitamos avanzar 500ms.
+    tick(500);
+    fixture.detectChanges(); // Detectar cambios después de que la validación asíncrona haya terminado
+
+    // Nivel 3.4: Verificación del Estado 'invalid' y el error específico
+    // Después del retraso, el control y el formulario deben ser inválidos con el error 'usernameTaken'.
+    expect(usernameControl?.invalid).toBeTrue();
+    expect(usernameControl?.errors?.['usernameTaken']).toBeTrue();
+    expect(component.registroForm.invalid).toBeTrue();
+    expect(usernameControl?.pending).toBeFalse(); // Ya no debe estar pendiente
+
+    // Opcional: Probar con un nombre de usuario válido
+    usernameInput.value = 'newuser';
+    usernameInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(usernameControl?.pending).toBeTrue();
+    tick(500);
+    fixture.detectChanges();
+    expect(usernameControl?.valid).toBeTrue(); // Debería ser válido
+    expect(usernameControl?.errors).toBeNull(); // No debería tener errores
+    expect(usernameControl?.pending).toBeFalse();
+  }));
+
+  it('should not call onSubmit but call markAllAsTouched when Enter is pressed on an invalid form', fakeAsync(() => {
+    spyOn(component, 'onSubmit').and.callThrough();
+    spyOn<any>(component, 'markAllAsTouched').and.callThrough();
+
+    const usernameInput: HTMLInputElement = fixture.debugElement.query(By.css('#username')).nativeElement;
+
+    // Asegurarse de que el formulario está inválido (por defecto después de reset en beforeEach)
+    expect(component.registroForm.invalid).toBeTrue();
+
+    // Esto debería disparar el evento 'submit' del formulario
+    const formElement: HTMLFormElement = fixture.debugElement.query(By.css('form')).nativeElement; // Obtener el elemento del formulario
+    formElement.dispatchEvent(new Event('submit'));
+    fixture.detectChanges(); // Detectar cambios después del evento
+
+    // Verificar que onSubmit NO fue llamado
+    expect(component.onSubmit).toHaveBeenCalled();
+    // Verificar que markAllAsTouched SÍ fue llamado
+    expect(component['markAllAsTouched']).toHaveBeenCalled();
+    expect(component['markAllAsTouched']).toHaveBeenCalledWith(component.registroForm);
+
+    // Opcional: Verificar que los controles están marcados como touched
+    expect(component.registroForm.get('username')?.touched).toBeTrue();
+    expect(component.registroForm.get('email')?.touched).toBeTrue();
+    expect(component.registroForm.get('passwordGroup.password')?.touched).toBeTrue();
+    expect(component.registroForm.get('passwordGroup.confirmPassword')?.touched).toBeTrue();
+  }));
 });
